@@ -33,7 +33,6 @@ RecvThread::RecvThread(char *ip, int port)
 
 void RecvThread::run()
 {
-     int lose = 0;
 #ifdef _WIN32
     WSADATA wsData = {0};
     if(0 != WSAStartup(0x202, &wsData))
@@ -96,7 +95,7 @@ void RecvThread::run()
         exit (-1);
     }
 
-    opt = 0;
+    opt = 1;
     if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&opt,sizeof (opt)) == -1)
     {
         printf("IP_MULTICAST_LOOP set fail!\n");
@@ -126,7 +125,7 @@ void RecvThread::run()
         exit (0);
     }
 
-    unsigned int totalSize = 0;
+    unsigned int total_size = 0;
     unsigned char buf[MAX_VIDSBUFSIZE] = {0};
     unsigned int offset = 0;
     unsigned char *tmp;
@@ -154,9 +153,10 @@ void RecvThread::run()
             }
             else
             {
+                //emit sigNoRecv();  //发送信号
                 //break;
             }
-
+            //qWarning("ret %d",ret);
             if(tmp[0] == 0xff && tmp[1] == 0xff)
             {
                 count = *((unsigned short *)&tmp[2]);
@@ -167,7 +167,7 @@ void RecvThread::run()
                         current_count = count;
                         continue;
                     }
-                    totalSize = *((unsigned int *)&tmp[4]);
+                    total_size = *((unsigned int *)&tmp[4]);
                     En_Queue(&stVidsQueue, buf + 8, offset - ret - 8, 0x0);
                     memcpy(buf, tmp, ret);
                     offset = ret;
@@ -175,7 +175,7 @@ void RecvThread::run()
                 }
                 else
                 {
-                    if(offset == totalSize + 8)
+                    if(offset == total_size + 8)
                     {
                         En_Queue(&stVidsQueue, buf + 8, offset - 8, 0x0);
                         offset = 0;
@@ -187,8 +187,8 @@ void RecvThread::run()
 
         if(current_time - last_time > 3)
         {
-            emit sigNoRecv();  //发送信号
-            break;
+            //emit sigNoRecv();  //发送信号
+            //break;
         }
     }
 #ifdef _WIN32

@@ -6,6 +6,7 @@ extern "C"
     #include "libavformat/avformat.h"
     #include "libavutil/pixfmt.h"
     #include "libswscale/swscale.h"
+    #include "libavutil/imgutils.h"
 }
 
 #include <QDebug>
@@ -29,24 +30,22 @@ void DecodeThread::run()
     AVCodecContext *pCodecCtx = NULL;
     AVCodecParserContext *pCodecParserCtx = NULL;
 
-    int frame_count;
-    AVFrame	*pFrame, *pFrameYUV;
-    uint8_t *out_buffer = NULL;
+    AVFrame	*pFrame, *pFrameRGB;
+    uint8_t *out_buffer[4];
+
     const int in_buffer_size = 1024 * 1024;
     uint8_t in_buffer[in_buffer_size] = {0};
     uint8_t *cur_ptr;
     int cur_size;
 
     AVPacket packet;
-    int ret, got_picture;
+    int ret;
 
 	int first_time = 1;
 
     AVCodecID codec_id = AV_CODEC_ID_H264;
 
     struct SwsContext *img_convert_ctx;
-
-    avcodec_register_all();
 
     pCodec = avcodec_find_decoder(codec_id);
     if (!pCodec) {
@@ -74,13 +73,17 @@ void DecodeThread::run()
     }
 
     pFrame = av_frame_alloc();
+    if (!pFrame)
+    {
+         fprintf(stderr, "Could not allocate video frame\n");
+         exit(1);
+     }
+
     av_init_packet(&packet);
+    pFrameRGB = av_frame_alloc();
 
-
-    AVFrame* pFrameBGR = av_frame_alloc(); //
-    int size;
-    int out_len;
     QUEUE_INDEX *index = NULL;
+    //FILE *fp = fopen("c://h264/1.h264", "rb");
     while (1)
     {
         if(!run_flag)
@@ -98,6 +101,9 @@ void DecodeThread::run()
         cur_ptr = index->pBuf;
         cur_size = index->uiSize;
         De_QueuePos(&stVidsQueue);
+
+        //cur_size = fread(in_buffer, 1, sizeof(in_buffer), fp);
+        //cur_ptr = in_buffer;
         while (cur_size>0){
             int len = av_parser_parse2(
                         pCodecParserCtx, pCodecCtx,
@@ -110,11 +116,46 @@ void DecodeThread::run()
 
             if (packet.size == 0)
                 continue;
+
+
+            ret = avcodec_send_packet(pCodecCtx, &packet);
+            if (ret < 0) {
+                continue ;
+            }            
+            while(ret >= 0)
+            {
+                ret = avcodec_receive_frame(pCodecCtx, pFrame);
+                if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                {
+                    continue;
+                }
+
+                else if(ret < 0)
+                {
+                    fprintf(stderr, "Error during decoding\n");
+                    goto run_out;
+                }
+                if (first_time)
+                {
+                    //SwsContext
+                    img_convert_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
+                      if ((ret = av_image_alloc(out_buffer, pFrameRGB->linesize,
+                                                pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, 16)) < 0) {
+                          fprintf(stderr, "Could not allocate source image\n");
+                          goto run_out;
+                      }
+                    first_time = 0;
+                }
+                sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, out_buffer, pFrameRGB->linesize);
+                QImage tmpImg((uchar *)out_buffer[0], pCodecCtx->width,pCodecCtx->height,QImage::Format_RGB888);
+                emit sigGetFrame(tmpImg);  //发送信号
+            }
+#if 0
             ret = avcodec_decode_video2(pCodecCtx, pFrame, &got_picture, &packet);
             if (ret < 0) {
                 printf("Decode Error\n");
                 continue ;
-            }            
+            }
             if (got_picture) {
                 if (first_time){
                     printf("\nCodec Full Name:%s\n", pCodecCtx->codec->long_name);
@@ -126,23 +167,25 @@ void DecodeThread::run()
                     if(out_buffer)
                         av_free(out_buffer);
                     out_buffer = (uint8_t *)av_malloc(size);
-                    avpicture_fill((AVPicture *)pFrameBGR, out_buffer, AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height); // allocator memory for BGR buffer
+                    avpicture_fill((AVPicture *)pFrameRGB, out_buffer, AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height); // allocator memory for BGR buffer
                     first_time = 0;
                 }
-                sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameBGR->data, pFrameBGR->linesize);
+                sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
                 QImage tmpImg((uchar *)out_buffer,pCodecCtx->width,pCodecCtx->height,QImage::Format_RGB888);
                 emit sigGetFrame(tmpImg);  //发送信号
             }
+#endif
 
         }
         packet.data = NULL;
         packet.size = 0;
     }
 
+run_out:
     sws_freeContext(img_convert_ctx);
     av_parser_close(pCodecParserCtx);
 
-    av_frame_free(&pFrameBGR);
+    av_frame_free(&pFrameRGB);
     av_frame_free(&pFrame);
     avcodec_close(pCodecCtx);
     av_free(pCodecCtx);

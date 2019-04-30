@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#pragma pack(4)
 
 #define MAX_QUEUESIZE 128
 
