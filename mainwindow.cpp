@@ -10,6 +10,8 @@
 #include "recvthread.h"
 
 extern int run_flag;
+extern unsigned int m_width;
+extern unsigned int m_height;
 
 #define min(a,b) (a<b? a:b)
 #define max(a,b) (a>b? a:b)
@@ -20,7 +22,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     setWindowFlags(Qt::X11BypassWindowManagerHint);
-
 	edgeMargin = 10; 		//设置检测边缘为10 
 	resizeDir = nodir;	
 	setMouseTracking(true);	//开启鼠标追踪
@@ -72,13 +73,9 @@ void MainWindow::paintEvent(QPaintEvent *event)
         if (mImage.size().width() <= 0) return;
 
         ///将图像按比例缩放成和窗口一样大小
-        QImage img = mImage.scaled(this->size(),Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        QImage img = mImage.scaled(this->size(),Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        //QImage img = mImage.scaled(this->size(),Qt::KeepAspectRatio);
         painter.drawImage(QPoint(0, 0),img); //画出图像
-    }
-    if(m_width != this->width() || m_height != this->height())
-    {
-        m_width = this->width();
-        m_height = this->height();
     }
 }
 

@@ -33,8 +33,8 @@ private:
     Ui::MainWindow *ui;
     QImage mImage;
 	int window_flag;
-    int m_width;
-    int m_height;
+    //int m_width;
+    //int m_height;
 
 	int edgeMargin;
 	QPoint m_position;

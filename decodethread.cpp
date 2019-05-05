@@ -15,9 +15,6 @@ extern "C"
 
 extern QUEUE stVidsQueue;
 extern int run_flag;
-unsigned int m_width = 0;
-unsigned int m_height = 0;
-
 DecodeThread::DecodeThread()
 {
 
@@ -147,9 +144,11 @@ void DecodeThread::run()
                     first_time = 0;
                 }
                 sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, out_buffer, pFrameRGB->linesize);
-                //QImage tmpImg((uchar *)out_buffer[0], pCodecCtx->width,pCodecCtx->height,QImage::Format_RGB888);
-                QImage tmpImg((uchar *)out_buffer[0], m_width, m_height,QImage::Format_RGB888);
-                emit sigGetFrame(tmpImg);  //发送信号
+
+				QImage tmpImg((uchar *)out_buffer[0], pCodecCtx->width, pCodecCtx->height,QImage::Format_RGB888);
+                QImage image = tmpImg.copy(); //把图像复制一份 传递给界面显示
+                emit sigGetFrame(image);  //发送信号
+
             }
 #if 0
             ret = avcodec_decode_video2(pCodecCtx, pFrame, &got_picture, &packet);
