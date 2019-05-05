@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 {
     char ip[16] = "225.3.3.11";
     int port = 9999;
-    int window_flag = 1;
+    int window_flag = 0;
 
     QApplication a(argc, argv);
     qInstallMsgHandler(msg_out);

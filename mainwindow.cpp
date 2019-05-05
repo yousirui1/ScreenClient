@@ -48,7 +48,13 @@ void MainWindow::init(char *ip, int port, int window_flag)
 
     if(!window_flag)
     {
+	    QDesktopWidget* desktopWidget = QApplication::desktop();
+    	QRect screenRect = desktopWidget->screenGeometry();
         this->showFullScreen();
+		setGeometry(0,0,screenRect.width(),screenRect.height());
+		this->show();
+        this->raise();
+        this->activateWindow();
     }
 
     QString filepath = QDir::currentPath()+"/images/background.jpg";
