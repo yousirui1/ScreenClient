@@ -147,7 +147,8 @@ void DecodeThread::run()
                     first_time = 0;
                 }
                 sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, out_buffer, pFrameRGB->linesize);
-                QImage tmpImg((uchar *)out_buffer[0], pCodecCtx->width,pCodecCtx->height,QImage::Format_RGB888);
+                //QImage tmpImg((uchar *)out_buffer[0], pCodecCtx->width,pCodecCtx->height,QImage::Format_RGB888);
+                QImage tmpImg((uchar *)out_buffer[0], m_width, m_height,QImage::Format_RGB888);
                 emit sigGetFrame(tmpImg);  //发送信号
             }
 #if 0

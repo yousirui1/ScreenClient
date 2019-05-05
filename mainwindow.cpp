@@ -75,14 +75,11 @@ void MainWindow::paintEvent(QPaintEvent *event)
         QImage img = mImage.scaled(this->size(),Qt::IgnoreAspectRatio, Qt::FastTransformation);
         painter.drawImage(QPoint(0, 0),img); //画出图像
     }
-#if 0
     if(m_width != this->width() || m_height != this->height())
     {
         m_width = this->width();
         m_height = this->height();
-        first_time = 1;
     }
-#endif
 }
 
 //用于窗口缩放 检测鼠标在窗口边缘事件
