@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     int window_flag = 1;
 
     QApplication a(argc, argv);
-    //qInstallMsgHandler(msg_out);
+    qInstallMsgHandler(msg_out);
 
     if(argc > 3)
     {
