@@ -27,6 +27,7 @@ QUEUE stVidsQueue;
 RecvThread::RecvThread(char *ip, int port)
 {
    Init_Queue(&stVidsQueue,ucVidsBuf,MAX_VIDSBUFSIZE);
+   qWarning("ip %s, port %d", ip, port);
    this->ip = ip;
    this->port = port;
 }
@@ -156,7 +157,7 @@ void RecvThread::run()
                 //emit sigNoRecv();  //发送信号
                 //break;
             }
-            //qWarning("ret %d",ret);
+            qWarning("ret %d",ret);
             if(tmp[0] == 0xff && tmp[1] == 0xff)
             {
                 count = *((unsigned short *)&tmp[2]);
